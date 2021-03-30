@@ -7,14 +7,23 @@ import android.service.controls.ControlsProviderService
 import android.service.controls.actions.ControlAction
 import android.util.Log
 import de.kolpa.shellypowermenu.shelly.provider.ShellyDeviceProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.jdk9.asPublisher
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import java.util.concurrent.Flow
 import java.util.function.Consumer
+import kotlin.coroutines.CoroutineContext
 
-class ShellyPowerMenuControlsProviderService : ControlsProviderService() {
+class ShellyPowerMenuControlsProviderService : ControlsProviderService(), CoroutineScope {
+    private val supervisorJob = SupervisorJob()
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.IO + supervisorJob
+
     private val shellyDeviceProvider by inject<ShellyDeviceProvider>()
 
     override fun createPublisherForAllAvailable(): Flow.Publisher<Control> =
@@ -61,6 +70,15 @@ class ShellyPowerMenuControlsProviderService : ControlsProviderService() {
         consumer: Consumer<Int>
     ) {
         consumer.accept(ControlAction.RESPONSE_OK)
+
+        launch {
+            shellyDeviceProvider.updateDeviceWithAction(controlId, action)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        supervisorJob.cancel()
     }
 
     companion object {

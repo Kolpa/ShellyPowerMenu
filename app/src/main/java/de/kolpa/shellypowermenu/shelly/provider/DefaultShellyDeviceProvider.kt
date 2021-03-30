@@ -1,5 +1,7 @@
 package de.kolpa.shellypowermenu.shelly.provider
 
+import android.service.controls.actions.ControlAction
+import android.service.controls.actions.FloatAction
 import de.kolpa.shellypowermenu.network.ShellyApi
 import de.kolpa.shellypowermenu.shelly.device.ShellyDevice
 import de.kolpa.shellypowermenu.shelly.device.ShellyRollerDevice
@@ -68,6 +70,17 @@ class DefaultShellyDeviceProvider(
             emitAll(devices.asFlow())
 
             delay(DEVICE_STATE_REFRESH_DELAY)
+        }
+    }
+
+    override suspend fun updateDeviceWithAction(deviceId: String, action: ControlAction) {
+        // TODO: Implement more device agnostic once we support more than rollers
+        if (action is FloatAction) {
+            when (val shellyDevice = getDeviceForId(deviceId)) {
+                is ShellyRollerDevice -> {
+                    shellyApi.setRollerPos(shellyDevice.deviceId, (action.newValue * 100).toInt())
+                }
+            }
         }
     }
 

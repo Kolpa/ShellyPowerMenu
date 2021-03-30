@@ -5,8 +5,10 @@ import com.google.gson.Gson
 import de.kolpa.shellypowermenu.config.settings.ShellyApiSettings
 import de.kolpa.shellypowermenu.network.requests.ShellyGetAllDevicesRequest
 import de.kolpa.shellypowermenu.network.requests.ShellyGetAllStatusRequest
+import de.kolpa.shellypowermenu.network.requests.ShellySetRollerPosRequest
 import de.kolpa.shellypowermenu.network.responses.ShellyGetAllDevicesResponse
 import de.kolpa.shellypowermenu.network.responses.ShellyGetAllStatusResponse
+import de.kolpa.shellypowermenu.network.responses.ShellySetRollerPosResponse
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
@@ -44,6 +46,27 @@ class ShellyApi(
                     gson = gson,
                     baseUrl = baseUrl,
                     apiKey = apiKey,
+                    continuation = continuation
+                )
+
+                requestQueue.add(request)
+            } else {
+                continuation.resumeWithException(Exception("Shelly account not configured"))
+            }
+        }
+
+    suspend fun setRollerPos(deviceId: String, rollerPosition: Int) =
+        suspendCancellableCoroutine<ShellySetRollerPosResponse> { continuation ->
+            val apiKey = shellyApiSettings.shellyApiKey
+            val baseUrl = shellyApiSettings.shellyBaseUrl
+
+            if (apiKey?.isNotBlank() == true && baseUrl?.isNotBlank() == true) {
+                val request = ShellySetRollerPosRequest(
+                    gson = gson,
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    deviceId = deviceId,
+                    rollerPosition = rollerPosition,
                     continuation = continuation
                 )
 
